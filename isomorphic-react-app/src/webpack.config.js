@@ -14,35 +14,24 @@
  * limitations under the License.
  */
 
-html, body {
-  font-family: 'Roboto', 'Helvetica', sans-serif;
-}
-.mdl-grid {
-  max-width: 1024px;
-  margin: auto;
-}
-.mdl-card {
-  min-height: 0;
-  padding-bottom: 5px;
-}
-.mdl-layout__header-row {
-  padding: 0;
-}
-h3 {
-  background: url('firebase-logo.png') no-repeat;
-  background-size: 40px;
-  padding-left: 50px;
-}
-#demo-signed-out-card,
-#demo-signed-in-card {
-  display: none;
-}
-#demo-url,
-#demo-response,
-#demo-url-cookie,
-#demo-response-cookie {
-  font-weight: bold;
-}
-#demo-signed-in-card {
-  width: 600px;
-}
+// Sample Webpack Configuration
+const path = require('path');
+
+module.exports = {
+  resolve: {
+    extensions: [".js", ".jsx"],
+    alias: {
+      'firebase-database': path.resolve(__dirname, '../functions/firebase-database'),
+    },
+  },
+  resolveLoader: {
+    modules: [path.resolve(__dirname, "./node_modules")],
+  },
+  module: {
+    rules: [{
+      test: /\.(js|jsx)$/,
+      exclude: /node_modules/,
+      loader: 'babel-loader'
+    }]
+  }
+};

@@ -14,35 +14,14 @@
  * limitations under the License.
  */
 
-html, body {
-  font-family: 'Roboto', 'Helvetica', sans-serif;
-}
-.mdl-grid {
-  max-width: 1024px;
-  margin: auto;
-}
-.mdl-card {
-  min-height: 0;
-  padding-bottom: 5px;
-}
-.mdl-layout__header-row {
-  padding: 0;
-}
-h3 {
-  background: url('firebase-logo.png') no-repeat;
-  background-size: 40px;
-  padding-left: 50px;
-}
-#demo-signed-out-card,
-#demo-signed-in-card {
-  display: none;
-}
-#demo-url,
-#demo-response,
-#demo-url-cookie,
-#demo-response-cookie {
-  font-weight: bold;
-}
-#demo-signed-in-card {
-  width: 600px;
-}
+// Sample Webpack Configuration for Client Bundle
+const baseConfig = require('./webpack.config');
+const path = require('path');
+
+module.exports = Object.assign({}, {
+  entry: './containers/ClientApp.js',
+  output: {
+    filename: 'client.bundle.js',
+    path: path.resolve(__dirname, '../public/assets')
+  }
+}, baseConfig);
