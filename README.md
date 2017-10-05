@@ -102,9 +102,9 @@ Uses a Firebase Storage trigger.
 
 Demonstrates how to automatically post GitHub commits to a Slack channel using an HTTPS triggered Function.
 
-### [Create and charge Stripe customers](/stripe)
+### Create and charge customers with [Stripe](/stripe) or [Paypal](/paypal)
 
-Demonstrates hows to integrate Firebase Auth and the Realtime database with Stripe via the Stripe Node.js library.
+Demonstrates hows to integrate Firebase Auth and the Realtime database with Stripe via the Stripe Node.js library and whows how to create HTTP endpoints to charge customers via Paypal.
 
 ### [Moderate offensive images](/moderate-images)
 
@@ -201,6 +201,11 @@ Uses an HTTP trigger.
 
 This sample demonstrates how to send a Firebase Cloud Messaging (FCM) notification to the developer device each time your app get a new user or lose one.
 Uses an Analytics trigger.
+
+### [Sync Database to a Google Spreadsheet](google-sheet-sync)
+
+This sample demonstrates how to sync new data written to a Firebase database to a Google Sheet. It includes a method for obtaining, storing, and using Oauth2 tokens for Google API access.
+Uses HTTPS triggers and Realtime Database triggers.
 
 ### [Presence for Cloud Firestore](/presence-firestore)
 
