@@ -17,7 +17,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
+admin.initializeApp();
 const rp = require('request-promise');
 const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
@@ -36,80 +36,60 @@ exports.accountcleanup = functions.https.onRequest((req, res) => {
   // Exit if the keys don't match
   if (!secureCompare(key, functions.config().cron.key)) {
     console.log('The key provided in the request does not match the key set in the environment. Check that', key,
-      'matches the cron.key attribute in `firebase env:get`');
+        'matches the cron.key attribute in `firebase env:get`');
     res.status(403).send('Security key does not match. Make sure your "key" URL query parameter matches the ' +
-      'cron.key environment variable.');
+        'cron.key environment variable.');
     return null;
   }
-
+  
   // Fetch all user details.
-  return getUsers();
-}).then((users) => {
-    // Find users that have not signed in in the last 30 days.
-    const inactiveUsers = users.filter(
-        (user) => parseInt(user.lastLoginAt, 10) < Date.now() - 30 * 24 * 60 * 60 * 1000);
-
+  return getInactiveUsers().then((inactiveUsers) => {
     // Use a pool so that we delete maximum `MAX_CONCURRENT` users in parallel.
-    const promisePool = new PromisePool(() => {
-      if (inactiveUsers.length > 0) {
-        const userToDelete = inactiveUsers.pop();
-        // Delete the inactive user.
-        return admin.auth().deleteUser(userToDelete.localId);
-      }
-      return reject();
-    }, MAX_CONCURRENT);
-
+    const promisePool = new PromisePool(() => deleteInactiveUser(inactiveUsers), MAX_CONCURRENT);
     return promisePool.start();
   }).then(() => {
-    return console.log('Deleted user account', userToDelete.localId, 'because of inactivity');
-  }).catch((error) => {
-    console.error('Deletion of inactive user account', userToDelete.localId, 'failed:', error);
-  }).then(() => {
     console.log('User cleanup finished');
-    return res.send('User cleanup finished');
+    res.send('User cleanup finished');
+    return null;
   });
+});
 
 /**
- * Returns the list of all users with their ID and lastLogin timestamp.
+ * Deletes one inactive user from the list.
  */
-function getUsers(userIds = [], nextPageToken, accessToken) {
-  return getAccessToken(accessToken).then((accessToken) => {
-    const options = {
-      method: 'POST',
-      uri: 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/downloadAccount?fields=users/localId,users/lastLoginAt,nextPageToken&access_token=' + accessToken,
-      body: {
-        nextPageToken: nextPageToken,
-        maxResults: 1000,
-      },
-      json: true,
-    };
+function deleteInactiveUser(inactiveUsers) {
+  if (inactiveUsers.length > 0) {
+    const userToDelete = inactiveUsers.pop();
 
-    return rp(options);
-  }).then((resp) => {
-    if (!resp.users) {
-      return userIds;
-    }
-    if (resp.nextPageToken) {
-      return getUsers(userIds.concat(resp.users), resp.nextPageToken, accessToken);
-    }
-    return userIds.concat(resp.users);
-  });
+    // Delete the inactive user.
+    return admin.auth().deleteUser(userToDelete.localId).then(() => {
+      console.log('Deleted user account', userToDelete.localId, 'because of inactivity');
+      return null;
+    }).catch(error => {
+      console.error('Deletion of inactive user account', userToDelete.localId, 'failed:', error);
+      return null;
+    });
+  }
+  return null;
 }
 
 /**
- * Returns an access token using the Google Cloud metadata server.
+ * Returns the list of all inactive users.
  */
-function getAccessToken(accessToken) {
-  // If we have an accessToken in cache to re-use we pass it directly.
-  if (accessToken) {
-    return Promise.resolve(accessToken);
-  }
-
-  const options = {
-    uri: 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
-    headers: {'Metadata-Flavor': 'Google'},
-    json: true,
-  };
-
-  return rp(options).then((resp) => resp.access_token);
+function getInactiveUsers(users = [], nextPageToken) {
+  return admin.auth().listUsers(1000, nextPageToken).then((result) => {   
+    // Find users that have not signed in in the last 30 days.
+    const inactiveUsers = result.users.filter(
+        user => Date.parse(user.metadata.lastSignInTime) < (Date.now() - 30 * 24 * 60 * 60 * 1000));
+    
+    // Concat with list of previously foud inactive users if there was more than 1000 users.
+    users = users.concat(inactiveUsers);
+    
+    // If there are more users to fetch we fecthc them.
+    if (result.pageToken) {
+      return getInactiveUsers(users, result.pageToken);
+    }
+    
+    return userIds;
+  });
 }
